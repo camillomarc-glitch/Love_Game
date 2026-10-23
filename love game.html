@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Catch My Heart</title>
+<style>
+:root{--bg:#fff1ef;--ink:#4a1730;--rose:#e0436b;--plum:#7a2551;--card:#ffffffcc;--sky:#ffd9d2;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a0f1f;--ink:#ffe4ea;--rose:#ff6f93;--plum:#ffb3c7;--card:#3d1830cc;--sky:#4a1d38}}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:radial-gradient(circle at 50% 0,var(--sky),var(--bg) 70%);color:var(--ink);font-family:Georgia,"Palatino Linotype",serif;display:flex;flex-direction:column;align-items:center;overflow:hidden;user-select:none;-webkit-user-select:none}
+header{width:100%;max-width:520px;display:flex;justify-content:space-between;padding:14px 18px;font-size:1.05rem}
+#bar{width:min(90%,484px);height:10px;border-radius:9px;background:var(--sky);overflow:hidden}
+#fill{height:100%;width:0;background:var(--rose);transition:width .25s}
+#field{position:relative;flex:1;width:100%;max-width:520px;margin-top:10px;touch-action:manipulation;overflow:hidden}
+.h{position:absolute;top:-50px;font-size:34px;cursor:pointer;line-height:1;animation:fall linear forwards}
+.h.bad{filter:grayscale(.2)}
+@keyframes fall{to{transform:translateY(110vh)}}
+.pop{position:absolute;pointer-events:none;font-weight:bold;color:var(--rose);animation:up .7s forwards}
+@keyframes up{to{transform:translateY(-50px);opacity:0}}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px;gap:14px;background:var(--bg);z-index:5}
+.screen.hide{display:none}
+h1{font-size:2.3rem;margin:0;color:var(--plum);font-weight:400;font-style:italic}
+p{margin:0;max-width:34ch;line-height:1.55}
+input{font:inherit;padding:12px 16px;border-radius:14px;border:2px solid var(--rose);background:var(--card);color:var(--ink);text-align:center;width:min(80%,280px)}
+button{font:inherit;font-size:1.1rem;padding:13px 30px;border:0;border-radius:30px;background:var(--rose);color:#fff;cursor:pointer}
+button:active{transform:scale(.96)}
+button:focus-visible,input:focus-visible{outline:3px solid var(--plum);outline-offset:3px}
+#letter{background:var(--card);padding:22px 24px;border-radius:18px;max-width:380px;line-height:1.7;text-align:left;font-size:1.05rem;border:2px solid var(--rose)}
+</style>
+</head>
+<body>
+<header><span id="who">For you</span><span>❤️ <b id="score">0</b> / 20</span></header>
+<div id="bar"><div id="fill"></div></div>
+<div id="field"></div>
+
+<div class="screen" id="start" style="position:fixed">
+  <h1>Catch My Heart</h1>
+  <p>Tap the hearts before they fall. Skip the 💔 ones. Catch 20 and a surprise is waiting.</p>
+  <input id="name" placeholder="Her name" maxlength="20" aria-label="Her name">
+  <button id="go">Start</button>
+</div>
+
+<div class="screen hide" id="end" style="position:fixed">
+  <h1 id="endTitle">You did it!</h1>
+  <div id="letter"></div>
+  <button id="again">Play again</button>
+</div>
+
+<script>
+(function(){
+  var field=document.getElementById('field'),score=0,goal=20,running=false,timer,name='my love';
+  var $=function(i){return document.getElementById(i)};
+  var good=['❤️','💖','💘','💕','🌹'];
+
+  function spawn(){
+    if(!running)return;
+    var bad=Math.random()<0.2;
+    var el=document.createElement('div');
+    el.className='h'+(bad?' bad':'');
+    el.textContent=bad?'💔':good[Math.floor(Math.random()*good.length)];
+    el.style.left=(Math.random()*(field.clientWidth-44))+'px';
+    el.style.animationDuration=(2.6+Math.random()*2-score*0.04)+'s';
+    var hit=function(e){
+      e.preventDefault();
+      if(el.dataset.done)return;
+      el.dataset.done=1;
+      var r=el.getBoundingClientRect(),f=field.getBoundingClientRect();
+      pop(r.left-f.left,r.top-f.top,bad?'-1':'+1');
+      score=Math.max(0,score+(bad?-1:1));
+      update();
+      el.remove();
+      if(score>=goal)win();
+    };
+    el.addEventListener('pointerdown',hit);
+    el.addEventListener('animationend',function(){el.remove()});
+    field.appendChild(el);
+  }
+
+  function pop(x,y,t){
+    var p=document.createElement('div');
+    p.className='pop';p.textContent=t;
+    p.style.left=x+'px';p.style.top=y+'px';
+    field.appendChild(p);
+    setTimeout(function(){p.remove()},700);
+  }
+
+  function update(){
+    $('score').textContent=score;
+    $('fill').style.width=(score/goal*100)+'%';
+  }
+
+  function start(){
+    name=$('name').value.trim()||'my love';
+    $('who').textContent='For '+name;
+    score=0;update();
+    field.innerHTML='';
+    $('start').classList.add('hide');
+    $('end').classList.add('hide');
+    running=true;
+    clearInterval(timer);
+    timer=setInterval(spawn,620);
+  }
+
+  function win(){
+    running=false;clearInterval(timer);
+    field.innerHTML='';
+    $('endTitle').textContent='You caught my heart, '+name+' ❤️';
+    var lines=[
+      'Every day with you feels like winning.',
+      'You make ordinary moments feel special.',
+      'Thank you for being you, for your smile, and for every laugh we share.',
+      'I would choose you again in every lifetime.'
+    ];
+    $('letter').innerHTML=lines.join('<br><br>')+'<br><br>— Yours, always 💌';
+    $('end').classList.remove('hide');
+    confetti();
+  }
+
+  function confetti(){
+    for(var i=0;i<28;i++){
+      var c=document.createElement('div');
+      c.className='h';
+      c.style.position='fixed';
+      c.style.zIndex=9;
+      c.style.pointerEvents='none';
+      c.textContent=['💖','🌸','✨','❤️'][i%4];
+      c.style.left=Math.random()*100+'vw';
+      c.style.animationDuration=(2+Math.random()*2.5)+'s';
+      c.style.animationDelay=(Math.random()*1.2)+'s';
+      document.body.appendChild(c);
+      (function(n){setTimeout(function(){n.remove()},6000)})(c);
+    }
+  }
+
+  $('go').addEventListener('click',start);
+  $('again').addEventListener('click',function(){$('end').classList.add('hide');$('start').classList.remove('hide')});
+  $('name').addEventListener('keydown',function(e){if(e.key==='Enter')start()});
+})();
+</script>
+</body>
+</html>
